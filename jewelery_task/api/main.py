@@ -39,6 +39,6 @@ def products_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+# Vercel için serverless handler
+def handler(request, *args, **kwargs):
+    return app(request.environ, lambda status, headers: None)
