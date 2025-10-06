@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "functions": {
-    "api/main.py": {
-      "runtime": "python3.9",
-      "handler": "handler"
+  "builds": [
+    {
+      "src": "api/main.py",
+      "use": "@vercel/python"
     }
-  },
+  ],
   "routes": [
     { "src": "/products", "dest": "/api/main.py" },
     { "src": "/(.*)", "dest": "/static/$1" }
