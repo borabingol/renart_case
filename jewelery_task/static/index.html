@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product List</title>
+    <style>
+        @font-face {
+            font-family: 'Avenir';
+            src: url('Fonts/avenir/Avenir-Book.ttf') format('truetype');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('Fonts/montserrat/Montserrat-Medium.ttf') format('truetype');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'Montserrat';
+            src: url('Fonts/montserrat/Montserrat-Regular.ttf') format('truetype');
+            font-weight: 400;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Avenir', sans-serif;
+            background-color: #f8f8f8;
+        }
+        h1 {
+            text-align: center;
+            font-size: 45px;
+            font-weight: 400;
+            margin: 20px 0 10px 0;
+        }
+        .sort-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        select {
+            font-size: 16px;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        /* Carousel Container */
+        .carousel-container {
+            position: relative;
+            padding: 0 40px;
+        }
+
+        /* Carousel */
+        .carousel {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 20px 0;
+            scroll-behavior: smooth;
+        }
+
+        /* Navigation Buttons */
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent; /* şeffaf */
+            color: black;
+            border: none;
+            font-size: 24px;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 0;
+            z-index: 10;
+            transition: background-color 0.2s;
+        }
+        .carousel-btn:hover {
+            background-color: rgba(0,0,0,0.2);
+        }
+        .carousel-btn.left { left: 0; }
+        .carousel-btn.right { right: 0; }
+
+        /* Product Card */
+        .product-card {
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            min-width: 250px;
+            flex: 0 0 auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .product-card img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .product-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            font-size: 15px;
+            margin: 10px 0 5px 0;
+        }
+        .product-price {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .color-options {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .color-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            transition: border 0.2s;
+        }
+        .color-circle.selected {
+            border: 2px solid black;
+        }
+        .color-name {
+            font-family: 'Avenir', sans-serif;
+            font-weight: 400;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        .stars-popularity {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .stars-popularity span.star {
+            color: gold;
+            font-size: 18px;
+        }
+        .stars-popularity span.score {
+            font-family: 'Avenir', sans-serif;
+            font-weight: 400;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Product List</h1>
+
+    <div class="sort-container">
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
+            <option value="popularity-asc">Popularity ↑</option>
+            <option value="popularity-desc">Popularity ↓</option>
+        </select>
+    </div>
+
+    <div class="carousel-container">
+        <button class="carousel-btn left" id="carouselLeft">&#8249;</button>
+        <div class="carousel" id="carousel">Loading products...</div>
+        <button class="carousel-btn right" id="carouselRight">&#8250;</button>
+    </div>
+
+    <script>
+        const colorMap = { yellow: '#E6CA97', white: '#D9D9D9', rose: '#E1A4A9' };
+        const colorNames = { yellow: 'Yellow Gold', white: 'White Gold', rose: 'Rose Gold' };
+        const carousel = document.getElementById('carousel');
+        const sortSelect = document.getElementById('sortSelect');
+
+        const carouselLeft = document.getElementById('carouselLeft');
+        const carouselRight = document.getElementById('carouselRight');
+
+        let products = [];
+
+        // Vercel’de çalışacak API URL
+        const API_URL = "/products";
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Failed to fetch products');
+                products = await response.json();
+                renderProducts(products);
+            } catch (err) {
+                carousel.innerHTML = `<div style="color:red; text-align:center;">${err.message}</div>`;
+                console.error(err);
+            }
+        }
+
+        function renderProducts(list) {
+            carousel.innerHTML = '';
+            list.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+
+                // Product image
+                const img = document.createElement('img');
+                img.src = product.images.rose || Object.values(product.images)[0];
+                card.appendChild(img);
+
+                // Product name
+                const name = document.createElement('div');
+                name.className = 'product-name';
+                name.textContent = product.name;
+                card.appendChild(name);
+
+                // Product price
+                const price = document.createElement('div');
+                price.className = 'product-price';
+                price.textContent = `$${product.price.toFixed(2)} USD`;
+                card.appendChild(price);
+
+                // Color options
+                const colorsContainer = document.createElement('div');
+                colorsContainer.className = 'color-options';
+                const colorButtons = document.createElement('div');
+                colorButtons.className = 'color-buttons';
+
+                const colorLabel = document.createElement('div');
+                colorLabel.className = 'color-name';
+                colorLabel.textContent = 'Yellow Gold'; // default
+
+                for (const [colorName, hex] of Object.entries(colorMap)) {
+                    const circle = document.createElement('div');
+                    circle.className = 'color-circle';
+                    if(colorName === 'yellow') circle.classList.add('selected'); // default seçili
+                    circle.style.backgroundColor = hex;
+                    circle.title = colorNames[colorName];
+
+                    circle.addEventListener('click', () => {
+                        img.src = product.images[colorName];
+                        colorLabel.textContent = colorNames[colorName];
+                        Array.from(colorButtons.children).forEach(c => c.classList.remove('selected'));
+                        circle.classList.add('selected');
+                    });
+                    colorButtons.appendChild(circle);
+                }
+                colorsContainer.appendChild(colorButtons);
+                colorsContainer.appendChild(colorLabel);
+                card.appendChild(colorsContainer);
+
+                // Stars + popularity
+                const starsContainer = document.createElement('div');
+                starsContainer.className = 'stars-popularity';
+                const fullStars = Math.floor(product.popularityScore);
+                const halfStar = product.popularityScore - fullStars >= 0.5;
+                for (let i = 0; i < 5; i++) {
+                    const star = document.createElement('span');
+                    star.className = 'star';
+                    star.textContent = i < fullStars ? '★' : (i === fullStars && halfStar ? '★' : '☆');
+                    starsContainer.appendChild(star);
+                }
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'score';
+                scoreSpan.textContent = `${product.popularityScore.toFixed(1)}/5`;
+                starsContainer.appendChild(scoreSpan);
+
+                card.appendChild(starsContainer);
+
+                carousel.appendChild(card);
+            });
+        }
+
+        function sortProducts(criteria) {
+            let sorted = [...products];
+            switch(criteria) {
+                case 'price-asc': sorted.sort((a,b) => a.price - b.price); break;
+                case 'price-desc': sorted.sort((a,b) => b.price - a.price); break;
+                case 'popularity-asc': sorted.sort((a,b) => a.popularityScore - b.popularityScore); break;
+                case 'popularity-desc': sorted.sort((a,b) => b.popularityScore - a.popularityScore); break;
+            }
+            renderProducts(sorted);
+        }
+
+        sortSelect.addEventListener('change', (e) => sortProducts(e.target.value));
+
+        // Carousel buttons
+        carouselLeft.addEventListener('click', () => {
+            carousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+        carouselRight.addEventListener('click', () => {
+            carousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+
+        fetchProducts();
+    </script>
+</body>
+</html>
